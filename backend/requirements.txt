@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-multipart
+aiohttp
+aiosqlite
+Pillow
+imagehash
+groq
+bcrypt
+PyJWT
+pydantic
+pydantic-settings
+python-dotenv
+playwright
