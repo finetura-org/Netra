@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NETRA — Cinematic Sequence</title>
+  
+  <!-- Modern Geometric Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      /* Typography & Aesthetics */
+      --font-primary: 'Space Grotesk', sans-serif;
+      --font-secondary: 'Sora', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      
+      --glow-color: rgba(255, 255, 255, 0.35);
+      --glow-intense: rgba(255, 255, 255, 0.7);
+      --blue-glow: rgba(0, 128, 255, 0.3);
+      --transition-speed: 800ms;
+      
+      /* Gold theme for background particles */
+      --gold-particle: rgba(240, 195, 80, 0.7);
+      --gold-glow: rgba(255, 215, 0, 0.4);
+    }
+
+    /* Core Reset & Fullscreen Setup */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-size: 16px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      /* Default preview background matching the user's blue gradient image. 
+         Can be toggled to 100% transparent. */
+      background: radial-gradient(circle at 40% 20%, #000c40 0%, #010410 70%, #000000 100%);
+      color: #ffffff;
+      transition: background 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    /* Transparent Overlay Mode Override */
+    body.transparent-bg {
+      background: transparent !important;
+    }
+
+    /* Canvas for Live Particle Effects */
+    #particle-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Subtle grid overlay to enhance futuristic cyber aesthetic */
+    .cyber-grid {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.005) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.005) 1px, transparent 1px);
+      background-size: 100px 100px;
+      background-position: center;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Subtle edge vignette to center focus and mask boundaries */
+    .vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+      pointer-events: none;
+      z-index: 3;
+    }
+
+    /* Slides Container */
+    .slides-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: grid;
+      place-items: center;
+      z-index: 10;
+    }
+
+    /* Base Slide Style */
+    .slide {
+      position: absolute;
+      width: 100%;
+      max-width: 1000px;
+      padding: 0 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.95);
+      filter: blur(15px);
+      transition: 
+        opacity var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1),
+        filter var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1),
+        transform var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Active Slide State */
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      filter: blur(0px);
+    }
+
+    /* Transitions: Going Forward (Next) */
+    .slide.exit-forward {
+      opacity: 0;
+      transform: scale(1.05) translateY(-20px);
+      filter: blur(15px);
+      pointer-events: none;
+    }
+
+    .slide.enter-forward {
+      opacity: 0;
+      transform: scale(0.95) translateY(20px);
+      filter: blur(15px);
+      pointer-events: none;
+      transition: none !important;
+    }
+
+    /* Transitions: Going Backward (Prev) */
+    .slide.exit-backward {
+      opacity: 0;
+      transform: scale(0.95) translateY(20px);
+      filter: blur(15px);
+      pointer-events: none;
+    }
+
+    .slide.enter-backward {
+      opacity: 0;
+      transform: scale(1.05) translateY(-20px);
+      filter: blur(15px);
+      pointer-events: none;
+      transition: none !important;
+    }
+
+    /* Typography Styles */
+    .slide-text {
+      font-family: var(--font-primary);
+      font-size: clamp(1.8rem, 4.5vw, 3.5rem);
+      font-weight: 400;
+      line-height: 1.35;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      text-shadow: 
+        0 0 12px var(--glow-color), 
+        0 0 24px rgba(255, 255, 255, 0.1);
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+    }
+
+    /* Final Reveal Specific Styles */
+    .reveal-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .reveal-title {
+      font-family: var(--font-secondary);
+      font-size: clamp(3.5rem, 9vw, 8rem);
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-shadow: 
+        0 0 20px var(--glow-color), 
+        0 0 40px rgba(255, 255, 255, 0.2),
+        0 0 60px var(--blue-glow);
+      transform: scale(0.9) translateY(20px);
+      filter: blur(10px);
+      opacity: 0;
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* When Slide is Active, animate reveal pieces sequentially */
+    .slide.active .reveal-title {
+      opacity: 1;
+      filter: blur(0px);
+      transform: scale(1) translateY(0);
+      transition-delay: 0.2s;
+    }
+
+    .reveal-subtitle {
+      font-family: var(--font-primary);
+      font-size: clamp(0.85rem, 2vw, 1.3rem);
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 1.5rem 0 0 0;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      transform: translateY(15px);
+      filter: blur(8px);
+      opacity: 0;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active .reveal-subtitle {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0);
+      transition-delay: 1.0s;
+    }
+
+    .reveal-divider {
+      width: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      margin: 2.2rem auto;
+      transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: 1.4s;
+    }
+
+    .slide.active .reveal-divider {
+      width: clamp(100px, 30vw, 240px);
+    }
+
+    .reveal-tagline {
+      font-family: var(--font-primary);
+      font-size: clamp(1.2rem, 3.2vw, 2.2rem);
+      font-weight: 300;
+      color: #ffffff;
+      margin: 0;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 15px var(--glow-color);
+      transform: translateY(15px);
+      filter: blur(8px);
+      opacity: 0;
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active .reveal-tagline {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0);
+      transition-delay: 2.1s;
+    }
+
+    /* Elegant Restart Button inside the final reveal */
+    .restart-btn {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.4);
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 20px;
+      border-radius: 20px;
+      margin-top: 3.5rem;
+      cursor: pointer;
+      pointer-events: auto;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0;
+      filter: blur(5px);
+      transform: translateY(10px);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active .restart-btn {
+      opacity: 1;
+      filter: blur(0px);
+      transform: translateY(0);
+      transition-delay: 3.0s;
+    }
+
+    .restart-btn:hover {
+      color: #ffffff;
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Vanish reveal elements instantly without delay when transitioning out of final slide */
+    .slide:not(.active) .reveal-title,
+    .slide:not(.active) .reveal-subtitle,
+    .slide:not(.active) .reveal-tagline,
+    .slide:not(.active) .reveal-divider,
+    .slide:not(.active) .restart-btn {
+      transition-delay: 0s !important;
+      transition-duration: 0.3s !important;
+    }
+
+    /* UI Controls & Overlays */
+
+    /* Subtle Navigation Button Overlay */
+    .nav-btn {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: \
+        opacity 0.4s ease, \
+        background 0.3s ease, \
+        border-color 0.3s ease, \
+        transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), \
+        visibility 0.4s ease;
+    }
+
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.3s ease;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .nav-btn.prev {
+      left: 30px;
+    }
+    .nav-btn.prev:hover {
+      transform: translateY(-50%) scale(1.05);
+    }
+    .nav-btn.prev:hover svg {
+      transform: translateX(-2px);
+    }
+
+    .nav-btn.next {
+      right: 30px;
+    }
+    .nav-btn.next:hover {
+      transform: translateY(-50%) scale(1.05);
+    }
+    .nav-btn.next:hover svg {
+      transform: translateX(2px);
+    }
+
+    /* Keyboard navigation helper text */
+    .nav-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.35);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      pointer-events: none;
+      z-index: 99;
+      transition: opacity 0.5s ease;
+    }
+
+    .nav-hint.fade-out {
+      opacity: 0;
+    }
+
+    /* Elegant Progress Indicators at the bottom */
+    .progress-bar-container {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 7px;
+      z-index: 100;
+    }
+
+    .progress-dot {
+      width: 16px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 1px;
+      cursor: pointer;
+      transition: \
+        background 0.3s ease, \
+        width 0.3s ease, \
+        box-shadow 0.3s ease;
+    }
+
+    .progress-dot:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .progress-dot.active {
+      width: 32px;
+      background: #ffffff;
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Preview Background Toggle Button */
+    .bg-toggle-btn {
+      position: fixed;
+      top: 25px;
+      right: 25px;
+      padding: 8px 14px;
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 101;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: all 0.3s ease;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .bg-toggle-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .bg-toggle-btn.transparent-mode {
+      color: rgba(255, 255, 255, 0.35);
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Screen Hover interaction rules for desktop */
+    @media (hover: hover) {
+      body:hover .nav-btn {
+        opacity: 0.5;
+        visibility: visible;
+      }
+      .nav-btn:hover {
+        opacity: 1 !important;
+      }
+    }
+
+    /* Mobile adjustments for Touch Devices */
+    @media (max-width: 768px) {
+      .slide {
+        padding: 0 24px;
+      }
+
+      .slide-text {
+        line-height: 1.4;
+      }
+
+      .nav-btn {
+        opacity: 0.3;
+        visibility: visible;
+        width: 44px;
+        height: 44px;
+      }
+
+      .nav-btn.prev {
+        left: 12px;
+      }
+
+      .nav-btn.next {
+        right: 12px;
+      }
+
+      .progress-bar-container {
+        bottom: 30px;
+        gap: 5px;
+      }
+
+      .progress-dot {
+        width: 12px;
+      }
+
+      .progress-dot.active {
+        width: 24px;
+      }
+
+      .nav-hint {
+        display: none; /* Hide key commands on mobile since swipe/touch is used */
+      }
+      
+      .bg-toggle-btn {
+        top: 15px;
+        right: 15px;
+        padding: 6px 10px;
+        font-size: 0.65rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Particle Background Layer -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- Visual Aesthetic Additions -->
+  <div class="cyber-grid"></div>
+  <div class="vignette"></div>
+
+  <!-- Background Toggle Button -->
+  <button id="bg-toggle" class="bg-toggle-btn" title="Toggle background to test transparency overlay mode">
+    Preview BG: ON
+  </button>
+
+  <!-- Typography Slides Container -->
+  <div class="slides-container">
+    
+    <!-- Slide 1 -->
+    <div class="slide active" data-index="0">
+      <h2 class="slide-text">Every Image Has a Story.</h2>
+    </div>
+
+    <!-- Slide 2 -->
+    <div class="slide" data-index="1">
+      <h2 class="slide-text">Some Stories Are Hidden.</h2>
+    </div>
+
+    <!-- Slide 3 -->
+    <div class="slide" data-index="2">
+      <h2 class="slide-text">NETRA Finds Them.</h2>
+    </div>
+
+    <!-- Slide 4 -->
+    <div class="slide" data-index="3">
+      <h2 class="slide-text">AI-Powered Reverse Image Intelligence</h2>
+    </div>
+
+    <!-- Slide 5 -->
+    <div class="slide" data-index="4">
+      <h2 class="slide-text">Upload. Analyze. Investigate.</h2>
+    </div>
+
+    <!-- Slide 6 -->
+    <div class="slide" data-index="5">
+      <h2 class="slide-text">Hidden Metadata Revealed.</h2>
+    </div>
+
+    <!-- Slide 7 -->
+    <div class="slide" data-index="6">
+      <h2 class="slide-text">Visual Fingerprints Generated.</h2>
+    </div>
+
+    <!-- Slide 8 -->
+    <div class="slide" data-index="7">
+      <h2 class="slide-text">Searching Across the Web...</h2>
+    </div>
+
+    <!-- Slide 9 -->
+    <div class="slide" data-index="8">
+      <h2 class="slide-text">AI Separates Facts from False Matches.</h2>
+    </div>
+
+    <!-- Slide 10 -->
+    <div class="slide" data-index="9">
+      <h2 class="slide-text">Every Match Is Verified.</h2>
+    </div>
+
+    <!-- Slide 11 -->
+    <div class="slide" data-index="10">
+      <h2 class="slide-text">Confidence Scored with Precision.</h2>
+    </div>
+
+    <!-- Slide 12 -->
+    <div class="slide" data-index="11">
+      <h2 class="slide-text">Evidence Compiled into Actionable Reports.</h2>
+    </div>
+
+    <!-- Slide 13 -->
+    <div class="slide" data-index="12">
+      <h2 class="slide-text">Protected by Secured Coding layer</h2>
+    </div>
+
+    <!-- Slide 14 -->
+    <div class="slide" data-index="13">
+      <h2 class="slide-text">From Images... to Intelligence.</h2>
+    </div>
+
+    <!-- Slide 15: Final Reveal -->
+    <div class="slide" data-index="14">
+      <div class="reveal-wrapper">
+        <h1 class="reveal-title">NETRA</h1>
+        <p class="reveal-subtitle">Network Enabled Tracking & Reconnaissance Analysis</p>
+        <div class="reveal-divider"></div>
+        <p class="reveal-tagline">Seeing Beyond the Visible.</p>
+        <button id="restart-seq" class="restart-btn">Restart Sequence</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Minimalist Side Navigation Buttons -->
+  <button class="nav-btn prev" id="prev-btn" aria-label="Previous Slide">
+    <svg viewBox="0 0 24 24">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  </button>
+  <button class="nav-btn next" id="next-btn" aria-label="Next Slide">
+    <svg viewBox="0 0 24 24">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </button>
+
+  <!-- Interactive Controls UI -->
+  <div class="nav-hint" id="nav-hint">Use [ ← / → ] or Scroll to Navigate</div>
+  
+  <div class="progress-bar-container" id="progress-container">
+    <!-- Generated dynamically via JS -->
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // ----------------------------------------------------
+      // Slide Navigation State & Logic
+      // ----------------------------------------------------
+      const slides = document.querySelectorAll('.slide');
+      const totalSlides = slides.length;
+      let currentIndex = 0;
+      let isTransitioning = false;
+      const transitionTime = 800; // Matches --transition-speed in CSS
+      
+      const prevBtn = document.getElementById('prev-btn');
+      const nextBtn = document.getElementById('next-btn');
+      const navHint = document.getElementById('nav-hint');
+      const progressContainer = document.getElementById('progress-container');
+      const restartBtn = document.getElementById('restart-seq');
+      
+      let navigatedOnce = false;
+
+      // 1. Initialize Progress Dots
+      function initProgressDots() {
+        progressContainer.innerHTML = '';
+        for (let i = 0; i < totalSlides; i++) {
+          const dot = document.createElement('div');
+          dot.classList.add('progress-dot');
+          if (i === 0) dot.classList.add('active');
+          dot.setAttribute('data-target', i);
+          dot.setAttribute('title', `Go to slide ${i + 1}`);
+          dot.addEventListener('click', () => {
+            if (isTransitioning) return;
+            const target = parseInt(dot.getAttribute('data-target'));
+            if (target > currentIndex) {
+              transitionTo(target, 'forward');
+            } else if (target < currentIndex) {
+              transitionTo(target, 'backward');
+            }
+          });
+          progressContainer.appendChild(dot);
+        }
+      }
+
+      // Update active state of dots and side buttons
+      function updateUIControls() {
+        const dots = document.querySelectorAll('.progress-dot');
+        dots.forEach((dot, idx) => {
+          if (idx === currentIndex) {
+            dot.classList.add('active');
+          } else {
+            dot.classList.remove('active');
+          }
+        });
+
+        // Toggle visibility of next/prev arrow buttons depending on position
+        if (currentIndex === 0) {
+          prevBtn.style.opacity = '0';
+          prevBtn.style.pointerEvents = 'none';
+        } else {
+          prevBtn.style.pointerEvents = 'auto';
+          if (window.innerWidth <= 768) {
+            prevBtn.style.opacity = '0.3';
+          }
+        }
+
+        if (currentIndex === totalSlides - 1) {
+          nextBtn.style.opacity = '0';
+          nextBtn.style.pointerEvents = 'none';
+        } else {
+          nextBtn.style.pointerEvents = 'auto';
+          if (window.innerWidth <= 768) {
+            nextBtn.style.opacity = '0.3';
+          }
+        }
+      }
+
+      // Hide the initial navigation instruction hint after user starts browsing
+      function handleFirstNavigation() {
+        if (!navigatedOnce) {
+          navigatedOnce = true;
+          navHint.classList.add('fade-out');
+        }
+      }
+
+      // Main transition function
+      function transitionTo(nextIndex, direction) {
+        if (isTransitioning || nextIndex === currentIndex) return;
+        if (nextIndex < 0 || nextIndex >= totalSlides) return;
+        
+        isTransitioning = true;
+        handleFirstNavigation();
+
+        const currentSlide = slides[currentIndex];
+        const nextSlide = slides[nextIndex];
+
+        // Reset any leftover exit/enter transition helper classes on all slides
+        slides.forEach(slide => {
+          slide.classList.remove('exit-forward', 'enter-forward', 'exit-backward', 'enter-backward');
+        });
+
+        if (direction === 'forward') {
+          // Slide old out forward
+          currentSlide.classList.remove('active');
+          currentSlide.classList.add('exit-forward');
+
+          // Position new in from bottom
+          nextSlide.classList.add('enter-forward');
+          nextSlide.offsetHeight; // Force DOM reflow to apply position instantly
+
+          // Animate new slide to active
+          nextSlide.classList.remove('enter-forward');
+          nextSlide.classList.add('active');
+        } else {
+          // Slide old out backward (downwards)
+          currentSlide.classList.remove('active');
+          currentSlide.classList.add('exit-backward');
+
+          // Position new in from top
+          nextSlide.classList.add('enter-backward');
+          nextSlide.offsetHeight; // Force DOM reflow
+
+          // Animate new slide to active
+          nextSlide.classList.remove('enter-backward');
+          nextSlide.classList.add('active');
+        }
+
+        currentIndex = nextIndex;
+        updateUIControls();
+
+        // Lock inputs until animation finishes
+        setTimeout(() => {
+          currentSlide.classList.remove('exit-forward', 'exit-backward');
+          isTransitioning = false;
+        }, transitionTime);
+      }
+
+      function navigate(direction) {
+        if (direction === 'forward') {
+          if (currentIndex < totalSlides - 1) {
+            transitionTo(currentIndex + 1, 'forward');
+          }
+        } else if (direction === 'backward') {
+          if (currentIndex > 0) {
+            transitionTo(currentIndex - 1, 'backward');
+          }
+        }
+      }
+
+      // 2. Keyboard Events
+      window.addEventListener('keydown', (e) => {
+        if (isTransitioning) return;
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          navigate('forward');
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          navigate('backward');
+        }
+      });
+
+      // 3. Mouse/Arrow Click Events
+      prevBtn.addEventListener('click', () => navigate('backward'));
+      nextBtn.addEventListener('click', () => navigate('forward'));
+      restartBtn.addEventListener('click', () => {
+        if (isTransitioning) return;
+        transitionTo(0, 'backward');
+      });
+
+      // 4. Mouse Wheel Scroll Event (with debounce & thresholding)
+      let lastWheelTime = 0;
+      const wheelCooldown = 900; // ms, slightly longer than transition
+
+      window.addEventListener('wheel', (e) => {
+        const now = Date.now();
+        if (now - lastWheelTime < wheelCooldown) return;
+
+        // Combine deltaY and deltaX, choosing the dominant scroll direction
+        const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+
+        if (Math.abs(delta) > 35) { // Threshold to prevent tiny accidental drifts
+          if (delta > 0) {
+            navigate('forward');
+          } else {
+            navigate('backward');
+          }
+          lastWheelTime = now;
+        }
+      }, { passive: true });
+
+      // 5. Touch Gestures (Swiping)
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchEndX = 0;
+      let touchEndY = 0;
+
+      window.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      window.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipe();
+      }, { passive: true });
+
+      function handleSwipe() {
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+        const threshold = 60; // min distance in pixels to trigger gesture
+
+        // Determine major axis of the swipe
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+          if (Math.abs(diffX) > threshold) {
+            if (diffX < 0) {
+              navigate('forward'); // Swiped left
+            } else {
+              navigate('backward'); // Swiped right
+            }
+          }
+        } else {
+          if (Math.abs(diffY) > threshold) {
+            if (diffY < 0) {
+              navigate('forward'); // Swiped up
+            } else {
+              navigate('backward'); // Swiped down
+            }
+          }
+        }
+      }
+
+      // Initialize slide layout UI
+      initProgressDots();
+      updateUIControls();
+
+      // ----------------------------------------------------
+      // Background Mode Toggle: Preview vs. Fully Transparent
+      // ----------------------------------------------------
+      const bgToggle = document.getElementById('bg-toggle');
+      bgToggle.addEventListener('click', () => {
+        document.body.classList.toggle('transparent-bg');
+        if (document.body.classList.contains('transparent-bg')) {
+          bgToggle.textContent = 'Preview BG: OFF';
+          bgToggle.classList.add('transparent-mode');
+        } else {
+          bgToggle.textContent = 'Preview BG: ON';
+          bgToggle.classList.remove('transparent-mode');
+        }
+      });
+
+      // ----------------------------------------------------
+      // Golden Embers Particle Canvas Loop
+      // ----------------------------------------------------
+      const canvas = document.getElementById('particle-canvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      const particleCount = 65; // Balanced for premium density and perfect 60fps
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      class Particle {
+        constructor() {
+          this.reset(true); // Distribute randomly across the screen initially
+        }
+
+        reset(initialStart = false) {
+          this.x = Math.random() * canvas.width;
+          // If starting on load, distribute vertically. Otherwise, spawn below the screen.
+          this.y = initialStart ? Math.random() * canvas.height : canvas.height + Math.random() * 20 + 5;
+          
+          this.size = Math.random() * 1.6 + 0.6; // Small elegant size (0.6px to 2.2px)
+          this.speedY = Math.random() * 0.5 + 0.3; // Gentle upward drift
+          
+          this.angle = Math.random() * Math.PI * 2;
+          this.angularSpeed = Math.random() * 0.015 + 0.003;
+          this.drift = Math.random() * 0.3 + 0.1; // Gentle horizontal sine wave movement
+          
+          this.maxOpacity = Math.random() * 0.45 + 0.15; // Soft transparencies
+          this.opacity = initialStart ? this.maxOpacity : 0;
+        }
+
+        update(deltaTime) {
+          this.y -= this.speedY * deltaTime;
+          this.angle += this.angularSpeed * deltaTime;
+          this.x += Math.sin(this.angle) * this.drift * deltaTime;
+
+          // Fade-in boundary at bottom, fade-out boundary at top
+          const bottomFadeBoundary = canvas.height * 0.15;
+          const topFadeBoundary = canvas.height * 0.25;
+
+          if (this.y > canvas.height - bottomFadeBoundary) {
+            // Fading in as it rises from bottom
+            const progress = (canvas.height - this.y) / bottomFadeBoundary;
+            this.opacity = progress * this.maxOpacity;
+          } else if (this.y < topFadeBoundary) {
+            // Fading out as it nears the top of the viewport
+            const progress = this.y / topFadeBoundary;
+            this.opacity = Math.max(0, progress * this.maxOpacity);
+          } else {
+            this.opacity = this.maxOpacity;
+          }
+
+          // Reset particle if it leaves the top or drifts past the horizontal screen bounds
+          if (this.y < -5 || this.x < -15 || this.x > canvas.width + 15) {
+            this.reset(false);
+          }
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          
+          // Cinematic Amber/Gold fill
+          ctx.fillStyle = `rgba(242, 190, 70, ${this.opacity})`;
+          
+          // Out of focus bokeh effect for slightly larger particles
+          if (this.size > 1.8) {
+            ctx.shadowBlur = this.size * 2.5;
+            ctx.shadowColor = `rgba(255, 215, 0, ${this.opacity * 0.5})`;
+          } else {
+            ctx.shadowBlur = 0;
+          }
+          
+          ctx.fill();
+        }
+      }
+
+      // Instantiate particles
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+
+      // Delta-time based animation loop for consistent speed on 60Hz, 120Hz, and 144Hz monitors
+      let lastTime = 0;
+      function animateParticles(currentTime) {
+        if (!lastTime) lastTime = currentTime;
+        // Normalize time multiplier around a 60fps base target (~16.67ms per frame)
+        const deltaTime = (currentTime - lastTime) / 16.666;
+        lastTime = currentTime;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Update and draw particles
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update(deltaTime || 1.0);
+          particles[i].draw();
+        }
+
+        requestAnimationFrame(animateParticles);
+      }
+
+      // Start the particle canvas simulation loop
+      requestAnimationFrame(animateParticles);
+    });
+  </script>
+</body>
+</html>
