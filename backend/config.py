@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).resolve().parent
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     CLEAN_IMAGE_DIR: Path = UPLOAD_DIR / "clean"
-    DATABASE_SEARCH_DIR: Path = BASE_DIR / ".." / "database"
+    DATABASE_SEARCH_DIR: Path = BASE_DIR / "database"
 
     # ── CORS ──────────────────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = [
