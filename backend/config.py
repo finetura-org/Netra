@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
-    "https://netra-coral.vercel.app",
+    "https://netra-git-main-dynamic-duo.vercel.app",
 ]
 
     # ── Groq API Keys (9-key rotation pool) ──────────────────────────────
