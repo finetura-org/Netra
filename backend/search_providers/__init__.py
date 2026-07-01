@@ -8,16 +8,12 @@ from __future__ import annotations
 from typing import Dict, List, Type
 
 from search_providers.base import BaseSearchProvider
-from search_providers.bing_visual_provider import BingVisualProvider
-from search_providers.google_lens import GoogleLensProvider
-from search_providers.tineye_provider import TinEyeProvider
+from search_providers.database_provider import DatabaseVisualSearchProvider
 
 # ── Registry ──────────────────────────────────────────────────────────────
 
 _PROVIDERS: Dict[str, Type[BaseSearchProvider]] = {
-    "google_lens": GoogleLensProvider,
-    "tineye": TinEyeProvider,
-    "bing_visual": BingVisualProvider,
+    "database_visual": DatabaseVisualSearchProvider,
 }
 
 

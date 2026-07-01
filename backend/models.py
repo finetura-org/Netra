@@ -102,8 +102,23 @@ class CaseResponse(BaseModel):
     status: str
     created_at: str
     updated_at: str
+    average_hash: Optional[str] = None
+    difference_hash: Optional[str] = None
+    aspect_ratio: Optional[str] = None
+    resolution: Optional[str] = None
+    dominant_colors: Optional[List[str]] = None
+    blur_level: Optional[float] = None
+    compression_quality: Optional[float] = None
+    noise_score: Optional[float] = None
+    edge_density: Optional[float] = None
+    image_entropy: Optional[float] = None
+    exif_available: Optional[int] = None
+    netra_dna_fingerprint: Optional[str] = None
     findings: List[Finding] = []
     timeline: List[TimelineEvent] = []
+    threat_score: Optional[float] = None
+    threat_level: Optional[str] = None
+    threat_factors: Optional[dict] = None
 
 
 

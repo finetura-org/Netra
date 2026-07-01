@@ -136,13 +136,19 @@ const InvestigationPage = ({ navigateTo }) => {
         className="cyber-glass w-full rounded-xl p-8 relative overflow-hidden border border-slate-800"
         variants={elementVariants}
       >
-        <div className="text-left mb-6">
-          <h2 className="text-xl font-bold tracking-tight text-white mb-1">
-            SUBMIT EVIDENCE IMAGE
-          </h2>
-          <p className="text-xs text-slate-400">
-            Select a file to run visual database tracing and metadata analytics
-          </p>
+        <div className="flex justify-between items-start mb-6">
+          <div className="text-left">
+            <h2 className="text-xl font-bold tracking-tight text-white mb-1">
+              SUBMIT EVIDENCE IMAGE
+            </h2>
+            <p className="text-xs text-slate-400">
+              Select a file to run visual database tracing and metadata analytics
+            </p>
+          </div>
+          <div className="text-[9px] font-mono text-right text-slate-500 bg-slate-950/40 border border-slate-900/60 px-2 py-1 rounded max-w-[150px] truncate">
+            TARGET ENDPOINT:<br/>
+            <span className="text-cyan-400 font-bold">{api.defaults.baseURL.replace('/api', '')}</span>
+          </div>
         </div>
 
         {/* Curved Rectangle Drag and Drop Zone */}

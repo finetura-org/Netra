@@ -5,6 +5,12 @@ Defines all API endpoints, middleware, startup hooks, and background tasks.
 
 from __future__ import annotations
 
+import sys
+import asyncio
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -59,11 +65,14 @@ from models import (
 )
 from report_generator import report_generator
 
-# ── Logging ───────────────────────────────────────────────────────────────
-
+log_format = "%(asctime)s  %(levelname)-8s  %(name)s  %(message)s"
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
+    format=log_format,
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(str(Path(__file__).resolve().parent / "netra_backend.log"), encoding="utf-8")
+    ]
 )
 logger = logging.getLogger("netra.main")
 
@@ -249,6 +258,10 @@ async def upload_case(
     # Perceptual hash
     phash = image_processor.generate_phash(raw_bytes)
 
+    # Calculate forensic Digital DNA profile
+    import json
+    dna = image_processor.calculate_dna_profile(raw_bytes)
+
     # Create DB record
     await create_case(
         case_id=case_id,
@@ -257,6 +270,18 @@ async def upload_case(
         clean_image_path=str(clean_path),
         phash=phash,
         status="processing",
+        average_hash=dna["average_hash"],
+        difference_hash=dna["difference_hash"],
+        aspect_ratio=dna["aspect_ratio"],
+        resolution=dna["resolution"],
+        dominant_colors=json.dumps(dna["dominant_colors"]),
+        blur_level=dna["blur_level"],
+        compression_quality=dna["compression_quality"],
+        noise_score=dna["noise_score"],
+        edge_density=dna["edge_density"],
+        image_entropy=dna["image_entropy"],
+        exif_available=dna["exif_available"],
+        netra_dna_fingerprint=dna["netra_dna_fingerprint"],
     )
 
     await create_timeline_event(
@@ -328,6 +353,68 @@ async def get_case_detail(
     findings_rows = await get_findings_for_case(case_id)
     timeline_rows = await get_timeline_for_case(case_id)
 
+    import json
+    dominant_colors_list = None
+    if case.get("dominant_colors"):
+        try:
+            dominant_colors_list = json.loads(case["dominant_colors"])
+        except Exception:
+            pass
+
+    # ── Calculate Threat Intelligence Details ──
+    threat_score = 0.0
+    threat_level = "LOW"
+    threat_factors = {
+        "volume": 0.0,
+        "similarity": 0.0,
+        "severity": 0.0,
+        "reputation": 0.0
+    }
+
+    if findings_rows:
+        # 1. Leak Volume Factor (up to 40 pts)
+        volume_pts = min(len(findings_rows) * 8.0, 40.0)
+        threat_factors["volume"] = round(volume_pts, 1)
+
+        # 2. Similarity Factor (up to 30 pts)
+        max_sim = max(f.get("similarity_score", 0.0) for f in findings_rows)
+        sim_pts = max(0.0, (max_sim - 70.0) / 30.0 * 30.0)
+        threat_factors["similarity"] = round(sim_pts, 1)
+
+        # 3. Mutation Severity Factor (up to 15 pts)
+        max_sev = 0.0
+        for f in findings_rows:
+            if f.get("metadata_json"):
+                try:
+                    meta = json.loads(f["metadata_json"])
+                    sev = float(meta.get("severity_score", 0.0))
+                    if sev > max_sev:
+                        max_sev = sev
+                except Exception:
+                    pass
+        sev_pts = (max_sev / 100.0) * 15.0
+        threat_factors["severity"] = round(sev_pts, 1)
+
+        # 4. Domain Reputation Risk (up to 15 pts)
+        high_risk_domains = {"amazon.com", "ebay.com", "facebook.com", "instagram.com", "reddit.com", "pinterest.com"}
+        matched_domains = {f.get("domain", "").lower() for f in findings_rows if f.get("domain")}
+        has_high_risk = any(d in high_risk_domains for d in matched_domains)
+        rep_pts = 15.0 if has_high_risk else (5.0 if matched_domains else 0.0)
+        threat_factors["reputation"] = round(rep_pts, 1)
+
+        # Overall threat score (0-100)
+        threat_score = round(min(volume_pts + sim_pts + sev_pts + rep_pts, 100.0), 1)
+
+        # Threat Levels
+        if threat_score >= 80.0:
+            threat_level = "CRITICAL"
+        elif threat_score >= 60.0:
+            threat_level = "HIGH"
+        elif threat_score >= 35.0:
+            threat_level = "MEDIUM"
+        else:
+            threat_level = "LOW"
+
     return CaseResponse(
         id=case["id"],
         case_id=case["case_id"],
@@ -338,8 +425,23 @@ async def get_case_detail(
         status=case["status"],
         created_at=case["created_at"],
         updated_at=case["updated_at"],
+        average_hash=case.get("average_hash"),
+        difference_hash=case.get("difference_hash"),
+        aspect_ratio=case.get("aspect_ratio"),
+        resolution=case.get("resolution"),
+        dominant_colors=dominant_colors_list,
+        blur_level=case.get("blur_level"),
+        compression_quality=case.get("compression_quality"),
+        noise_score=case.get("noise_score"),
+        edge_density=case.get("edge_density"),
+        image_entropy=case.get("image_entropy"),
+        exif_available=case.get("exif_available"),
+        netra_dna_fingerprint=case.get("netra_dna_fingerprint"),
         findings=[Finding(**f) for f in findings_rows],
         timeline=[TimelineEvent(**t) for t in timeline_rows],
+        threat_score=threat_score,
+        threat_level=threat_level,
+        threat_factors=threat_factors,
     )
 
 
@@ -419,5 +521,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG,
+        reload=False,
     )

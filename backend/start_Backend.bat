@@ -7,9 +7,9 @@ echo.
 cd /d "%~dp0"
 
 echo Checking Python dependencies...
-python -c "import fastapi" 2>NUL
+python -c "import fastapi, playwright, playwright_stealth, aiosqlite, PIL, imagehash, groq, jwt, dotenv" 2>NUL
 if %ERRORLEVEL% neq 0 (
-    echo FastAPI not found. Installing requirements from requirements.txt...
+    echo Python dependencies missing. Installing requirements from requirements.txt...
     pip install -r requirements.txt
     if %ERRORLEVEL% neq 0 (
         echo.

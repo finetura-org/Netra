@@ -11,7 +11,15 @@ import threading
 from pathlib import Path
 from typing import List
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+# Load all potential env files
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
+load_dotenv(BASE_DIR / "APIs.env")
+load_dotenv(BASE_DIR / ".." / "API_KEYS.env")
+load_dotenv(BASE_DIR / ".." / ".env")
 
 
 class Settings(BaseSettings):
@@ -34,10 +42,14 @@ class Settings(BaseSettings):
     # ── Database ──────────────────────────────────────────────────────────
     DATABASE_URL: str = "netra.db"
 
+    # ── Scrapers ──────────────────────────────────────────────────────────
+    PLAYWRIGHT_HEADLESS: bool = False
+
     # ── Paths ─────────────────────────────────────────────────────────────
     BASE_DIR: Path = Path(__file__).resolve().parent
     UPLOAD_DIR: Path = BASE_DIR / "uploads"
     CLEAN_IMAGE_DIR: Path = UPLOAD_DIR / "clean"
+    DATABASE_SEARCH_DIR: Path = BASE_DIR / ".." / "database"
 
     # ── CORS ──────────────────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = [
@@ -48,17 +60,7 @@ class Settings(BaseSettings):
 ]
 
     # ── Groq API Keys (9-key rotation pool) ──────────────────────────────
-    GROQ_API_KEYS: List[str] = [
-        os.getenv("GROQ_API_KEY_1"),
-        os.getenv("GROQ_API_KEY_2"),
-        os.getenv("GROQ_API_KEY_3"),
-        os.getenv("GROQ_API_KEY_4"),
-        os.getenv("GROQ_API_KEY_5"),
-        os.getenv("GROQ_API_KEY_6"),
-        os.getenv("GROQ_API_KEY_7"),
-        os.getenv("GROQ_API_KEY_8"),
-    ]
-    GROQ_API_KEYS = [k for k in GROQ_API_KEYS if k]
+    GROQ_API_KEYS: List[str] = []
 
 
     # ── Model Fallback Chain ─────────────────────────────────────────────
@@ -116,5 +118,19 @@ class _KeyRotator:
 
 settings = Settings()
 settings.ensure_dirs()
+
+# Populate GROQ_API_KEYS dynamically from environment variables
+loaded_keys = []
+for prefix in ["GROQ_API_KEY_", "API_KEY_", "Key_"]:
+    for i in range(1, 10):
+        val = os.getenv(f"{prefix}{i}")
+        if val and val.strip():
+            loaded_keys.append(val.strip())
+
+# Remove duplicates while maintaining order
+seen = set()
+settings.GROQ_API_KEYS = [k for k in loaded_keys if not (k in seen or seen.add(k))]
+
+print(f"Loaded {len(settings.GROQ_API_KEYS)} Groq API key(s) dynamically.")
 
 key_rotator = _KeyRotator(settings.GROQ_API_KEYS)

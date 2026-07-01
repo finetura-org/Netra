@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 
+import SandboxPage from './pages/SandboxPage';
 import HeroPage from './pages/HeroPage';
 import HomePage from './pages/HomePage';
 import InvestigationPage from './pages/InvestigationPage';
@@ -10,12 +11,11 @@ import ResultsPage from './pages/ResultsPage';
 import CasesPage from './pages/CasesPage';
 import ReportsPage from './pages/ReportsPage';
 import LeakViewer from './pages/LeakViewer';
-import DevelopmentPage from './pages/DevelopmentPage';
 import LightningBackground from './components/LightningBackground';
 
 export default function App() {
   const { user, loading } = useAuth();
-  const [page, setPage] = useState('development');
+  const [page, setPage] = useState('sandbox');
   const [selectedCaseId, setSelectedCaseId] = useState(null);
   const [leakViewParams, setLeakViewParams] = useState(null);
 
@@ -79,9 +79,10 @@ export default function App() {
       {/* Main Pages with AnimatePresence for transitions */}
       <main className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center p-4 md:p-8">
         <AnimatePresence mode="wait">
-          {page === 'development' && (
-            <motion.div key="development" className="w-full max-w-2xl" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-              <DevelopmentPage onComplete={() => navigateTo('hero')} />
+
+          {page === 'sandbox' && (
+            <motion.div key="sandbox" className="w-full max-w-3xl" variants={pageVariants} initial="initial" animate="animate" exit="exit">
+              <SandboxPage onContinue={() => navigateTo('hero')} />
             </motion.div>
           )}
 

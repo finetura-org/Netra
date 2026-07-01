@@ -9,7 +9,7 @@ const LiveProcessPage = ({ caseId, navigateTo }) => {
   const [simulatedStep, setSimulatedStep] = useState(0);
   const logContainerRef = useRef(null);
 
-  // List of scanning steps to rotate through every 5 seconds to show active system pipeline
+  // List of scanning steps to rotate through every 2 seconds to show active system pipeline
   const processSteps = [
     {
       icon: Shield,
@@ -22,39 +22,39 @@ const LiveProcessPage = ({ caseId, navigateTo }) => {
       color: 'text-emerald-400'
     },
     {
-      icon: Eye,
-      text: 'Querying visual search directories...',
+      icon: Database,
+      text: 'Indexing visual database directories...',
       color: 'text-cyan-400'
     },
     {
-      icon: Database,
-      text: 'Deduplicating matched database items...',
+      icon: Eye,
+      text: 'Evaluating perceptual similarity...',
       color: 'text-purple-400'
     },
     {
       icon: Brain,
-      text: 'Computing similarity confidence scores...',
+      text: 'Deduplicating local threat vectors...',
       color: 'text-emerald-400'
     },
     {
       icon: FileText,
-      text: 'Synthesizing AI threat reports...',
+      text: 'Compiling case findings ledger...',
       color: 'text-cyan-400'
     },
     {
-      icon: FileText,
-      text: 'Compiling PDF forensics dossier...',
+      icon: Brain,
+      text: 'Synthesizing neural connection branches...',
       color: 'text-purple-400'
     }
   ];
 
-  // Rotate through simulated steps every 5 seconds only while scan is in progress
+  // Rotate through simulated steps every 2 seconds only while scan is in progress
   useEffect(() => {
     if (status !== 'processing' && status !== 'investigating') return;
 
     const rotationInterval = setInterval(() => {
       setSimulatedStep((prev) => (prev + 1) % processSteps.length);
-    }, 5000);
+    }, 2000);
 
     return () => clearInterval(rotationInterval);
   }, [status]);
@@ -119,13 +119,19 @@ const LiveProcessPage = ({ caseId, navigateTo }) => {
       <div className="cyber-glass w-full rounded-xl p-8 relative overflow-hidden border border-slate-800 flex flex-col items-center">
         
         {/* Header */}
-        <div className="w-full border-b border-slate-800 pb-4 mb-8 text-left">
-          <h2 className="text-lg font-bold tracking-tight text-white">
-            RUNNING DIGITAL TRACING
-          </h2>
-          <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-0.5">
-            CASE ID: {caseId || 'Pending...'}
-          </p>
+        <div className="w-full border-b border-slate-800 pb-4 mb-8 flex justify-between items-start">
+          <div className="text-left">
+            <h2 className="text-lg font-bold tracking-tight text-white">
+              RUNNING DIGITAL TRACING
+            </h2>
+            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-0.5">
+              CASE ID: {caseId || 'Pending...'}
+            </p>
+          </div>
+          <div className="text-[9px] font-mono text-right text-slate-500 bg-slate-950/40 border border-slate-900/60 px-2 py-1 rounded max-w-[150px] truncate">
+            ENDPOINT:<br/>
+            <span className="text-cyan-400 font-bold">{api.defaults.baseURL.replace('/api', '')}</span>
+          </div>
         </div>
 
         {/* Central Rotating Loader Ring */}

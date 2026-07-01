@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getBackendBaseUrl } from '../api/client';
 
 export default function LeakViewer() {
   const { caseId, domain, slug } = useParams();
@@ -15,12 +16,12 @@ export default function LeakViewer() {
         // Fetch details from backend API
         const token = localStorage.getItem('token');
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-        const response = await axios.get(`http://localhost:8000/api/cases/${caseId}`, config);
+        const response = await axios.get(`${getBackendBaseUrl()}/api/cases/${caseId}`, config);
         setCaseData(response.data);
       } catch (err) {
         // If unauthenticated or token missing, try to fetch with no auth (FastAPI falls back to guest mode)
         try {
-          const response = await axios.get(`http://localhost:8000/api/cases/${caseId}`);
+          const response = await axios.get(`${getBackendBaseUrl()}/api/cases/${caseId}`);
           setCaseData(response.data);
         } catch (innerErr) {
           setError('Failed to load visual evidence.');
@@ -65,7 +66,7 @@ export default function LeakViewer() {
   // Get absolute clean image path on local server
   const cleanImageFilename = caseData.clean_image_path ? caseData.clean_image_path.split(/[\\/]/).pop() : null;
   const imageUrl = cleanImageFilename
-    ? `http://localhost:8000/uploads/clean/${cleanImageFilename}`
+    ? `${getBackendBaseUrl()}/uploads/clean/${cleanImageFilename}`
     : 'https://via.placeholder.com/800x600?text=No+Visual+Evidence';
 
   const domainLower = domain.toLowerCase();

@@ -103,7 +103,7 @@ class InvestigationAgent:
         await create_timeline_event(
             case_id, "investigation_started", "Investigation pipeline initiated."
         )
-        await asyncio.sleep(5)  # Scrub EXIF metadata headers
+        await asyncio.sleep(1)  # Scrub EXIF metadata headers
 
         image_path = case.get("clean_image_path") or ""
         phash = case.get("phash") or ""
@@ -127,97 +127,123 @@ class InvestigationAgent:
             await create_timeline_event(
                 case_id, "description_failed", f"AI description failed: {exc}"
             )
-        await asyncio.sleep(10)  # Extract semantic markers
+        await asyncio.sleep(1.5)  # Extract semantic markers
 
-        # 3️⃣ Prototype Simulation: Load links from Links.txt and generate >150 findings
-        import os
-        import random
-        import urllib.parse
-        
-        provider_names = ["Google Lens", "TinEye", "Bing Visual Search"]
-        root_dir = settings.BASE_DIR.parent
-        links_file = os.path.join(root_dir, "Links.txt")
-        links = []
-        if os.path.exists(links_file):
-            with open(links_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    line_str = line.strip()
-                    if line_str and line_str.startswith("http"):
-                        links.append(line_str)
-        
-        # Fallback list of links from Links.txt in case file read fails
-        if not links:
-            links = [
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fstatic.india.com%2Fwp-content%2Fuploads%2F2024%2F01%2FMixCollage-07-Jan-2024-08-40-AM-3510.jpg%3Fimpolicy%3DMedium_Widthonly%26w%3D400&imgrefurl=https%3A%2F%2Fwww.india.com%2Fsports%2Ffact-check-reality-behind-ms-dhonis-smoking-video-that-is-now-going-viral-6638043%2F&docid=4RFBxPWf2UqNAM&tbnid=53P2Et73-0812M&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIFhAB..i&w=400&h=271&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIFhAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fimages.ottplay.com%2Fimages%2Fms-dhoni-1704621426.jpg&imgrefurl=https%3A%2F%2Fwww.ottplay.com%2Fsports%2Fnews%2Fvideo-of-ms-dhoni-smoking-hookah-goes-viral-look-at-other-cricketers-who-smoke-or-used-to%2Fb2bf853b4d492&docid=9BwTgbmCNl1pQM&tbnid=3ePtGDAgtVS0jM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIHxAB..i&w=1200&h=675&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIHxAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fmedia.assettype.com%2Fdeccanherald%2F2024-01%2F38a9e227-8a2d-44b0-832d-b2c13fe0d05b%2Fdh.PNG%3Fw%3D1200%26h%3D675%26auto%3Dformat%252Ccompress%26fit%3Dmax%26enlarge%3Dtrue&imgrefurl=https%3A%2F%2Fwww.deccanherald.com%2Findia%2Fvideo-of-m-s-dhoni-smoking-hookah-at-social-gathering-goes-viral-2838814&docid=WwfzHDuxbhb8vM&tbnid=1OCLkKrTzI84LM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIJRAB..i&w=1200&h=675&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIJRAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fstatic.india.com%2Fwp-content%2Fuploads%2F2024%2F01%2FMixCollage-07-Jan-2024-08-31-AM-4299.jpg&imgrefurl=https%3A%2F%2Fwww.india.com%2Fsports%2Fms-dhonis-former-ipl-teammate-makes-shocking-revelation-claims-csk-captains-love-for-smoking-hookah-6638073%2F&docid=x6qjimIm0CvXLM&tbnid=p0MSI1f9bqmNNM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQILRAB..i&w=700&h=474&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQILRAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fimages.mykhel.com%2Fimg%2F2024%2F01%2Fms-dhoni-hookah-600-1704563924.jpg&imgrefurl=https%3A%2F%2Fwww.mykhel.com%2Fcricket%2Fwatch-ms-dhoni-smokes-hookah-video-goes-viral-angry-fans-react-on-twitter-256089.html&docid=oFmG-XewsqXitM&tbnid=9PSHySEoGzhILM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQITxAB..i&w=600&h=338&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQITxAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fim.rediff.com%2Fcricket%2F2024%2Fjan%2F08dhoni-hookah.png&imgrefurl=https%3A%2F%2Fm.rediff.com%2Fcricket%2Freport%2Fdhoni-smokes-hookah-video-goes-viral%2F20240108.htm&docid=9qfYbz8ViqWaeM&tbnid=F9amM9u9-zuQYM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIXRAB..i&w=1200&h=800&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIXRAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fwww.bollywoodshaadis.com%2Fimg%2Farticle-20241710504939049000.webp&imgrefurl=https%3A%2F%2Fwww.bollywoodshaadis.com%2Farticles%2Fms-dhonis-video-smoking-at-a-public-event-goes-viral-on-social-media-netizens-strongly-react-to-it-48114&docid=n7MHr1a7VBSbsM&tbnid=_7-ryNw5Uqbb6M&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIUxAB..i&w=1080&h=1475&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIUxAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fwww.bollywoodshaadis.com%2Fimg%2Farticle-l-20241711561942979000.webp&imgrefurl=https%3A%2F%2Fwww.bollywoodshaadis.com%2Farticles%2Fms-dhonis-video-smoking-at-a-public-event-goes-viral-on-social-media-netizens-strongly-react-to-it-48114&docid=n7MHr1a7VBSbsM&tbnid=rc-6MJ_GHlKXaM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIfBAB..i&w=700&h=400&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIfBAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Fimage.telanganatoday.com%2Fwp-content%2Fuploads%2F2024%2F01%2Fdhoni_V_jpg--442x260-4g.webp%3Fsw%3D412%26dsz%3D442x260%26iw%3D392%26p%3Dfalse%26r%3D2.625&imgrefurl=https%3A%2F%2Ftelanganatoday.com%2Fms-dhoni-seen-smoking-hookah-in-this-rare-viral-video&docid=K1ZDh_7v5XxyQM&tbnid=PJuOrjxaXhnRdM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIORAB..i&w=442&h=260&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIORAB",
-                "https://www.google.com/imgres?q=ms%20dhoni%20cigarette&imgurl=https%3A%2F%2Ffeeds.abplive.com%2Fonecms%2Fimages%2Fuploaded-images%2F2024%2F01%2F07%2Fb60080defba1a36d1639b2e72da4af411704607181037924_original.jpg%3Fimpolicy%3Dabp_cdn%26imwidth%3D320&imgrefurl=https%3A%2F%2Fmarathi.abplive.com%2Fsports%2Fms-dhoni-smoking-hookah-viral-video-shows-ms-dhoni-smoking-hookah-marathi-news-1244651&docid=rBX9VtWBAQKEwM&tbnid=QXEbkdaANay4zM&vet=12ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIMxAB..i&w=320&h=240&hcb=2&ved=2ahUKEwjoifuQq6SVAxWpR2wGHcosAekQnPAOegQIMxAB"
-            ]
-
-        # Realistic titles matched to Dhoni findings
-        titles_pool = [
-            "Fact Check: Reality Behind MS Dhoni's Smoking Video That Is Viral",
-            "Video of MS Dhoni Smoking Hookah Goes Viral on Social Media",
-            "Video of M S Dhoni Smoking Hookah at Social Gathering - Deccan Herald",
-            "MS Dhoni's Former IPL Teammate Claims CSK Captain Loves Smoking Hookah",
-            "Watch: MS Dhoni Smokes Hookah Video Goes Viral, Fans React",
-            "Dhoni Smokes Hookah Video Goes Viral",
-            "MS Dhoni's Video Smoking at a Public Event Goes Viral on Social Media",
-            "MS Dhoni Seen Smoking Hookah in this Rare Viral Video - Telangana Today",
-            "Former Captain MS Dhoni Seen Smoking Hookah - NewsContinuous",
-            "MS Dhoni Smoking Hookah Video Viral - Fans Reaction",
-            "MS Dhoni Smoking Hookah Video Went Viral - Navbharat",
-            "MS Dhoni Smoking Hookah Video - Latest Updates",
-        ]
-
-        def get_domain_from_url(url: str) -> str:
-            parsed = urllib.parse.urlparse(url)
-            query_params = urllib.parse.parse_qs(parsed.query)
-            if "imgrefurl" in query_params:
-                target_url = query_params["imgrefurl"][0]
-                return urllib.parse.urlparse(target_url).netloc.replace("www.", "")
-            return parsed.netloc.replace("www.", "")
-
+        # 3️⃣ Query Local Database Directories (Simulating Web Visual Search)
         await create_timeline_event(
             case_id,
             "providers_queried",
-            "Querying providers: Google Lens, TinEye, Bing Visual Search with mock bypass.",
+            "Initiating visual search across NETRA local database folders (website_001 to website_050)...",
         )
-        await asyncio.sleep(15)  # Search visual directories
+        await asyncio.sleep(1)
+
+        import imagehash
+        from PIL import Image
+        from pathlib import Path
+        import json
+        from search_providers.database_provider import MOCK_DOMAINS
+
+        try:
+            uploaded_hash = imagehash.hex_to_hash(phash)
+        except Exception as exc:
+            logger.error("Failed to parse target phash hex: %s", exc)
+            uploaded_hash = imagehash.phash(Image.open(image_path), hash_size=8)
+
+        db_dir = Path(settings.DATABASE_SEARCH_DIR)
+        
+        # List all website folders sorted (website_001, website_002, etc.)
+        website_folders = sorted(
+            [d for d in db_dir.iterdir() if d.is_dir() and d.name.startswith("website_")],
+            key=lambda x: x.name
+        )
 
         unique_results = []
-        # Generate a random number of findings (always > 150)
-        num_findings = random.randint(151, 210)
-        for idx in range(num_findings):
-            base_link = random.choice(links)
-            # Unique hash suffix makes it distinct for DB saving and filters, 
-            # but browser handles it client-side and navigates to the direct original URL.
-            unique_url = f"{base_link}#evidence-{idx}"
-            domain = get_domain_from_url(base_link)
+        
+        # Scan each folder
+        for idx, folder in enumerate(website_folders):
+            domain = MOCK_DOMAINS[idx % len(MOCK_DOMAINS)]
             
-            provider = random.choice(["google_lens", "tineye", "bing_visual"])
-            similarity = round(random.uniform(65.0, 99.0), 1)
-            title = random.choice(titles_pool)
+            # Log scanning of this website to the timeline
+            await create_timeline_event(
+                case_id,
+                "scanning_database",
+                f"Scanning directory: {folder.name} (domain: {domain})..."
+            )
+            
+            # Introduce a small sleep so that the UI can update live
+            await asyncio.sleep(0.06)
 
-            unique_results.append({
-                "source_url": unique_url,
-                "page_title": f"{title} (Evidence #{idx+1})",
-                "domain": domain,
-                "similarity_score": similarity,
-                "source_provider": provider,
-                "metadata_json": None,
-            })
+            match_found = False
+            # Check files in folder
+            for file_path in folder.iterdir():
+                if file_path.is_file() and file_path.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"):
+                    try:
+                        # Process image in executor to avoid blocking the event loop
+                        loop = asyncio.get_event_loop()
+                        def process_image(p):
+                            with Image.open(p) as img:
+                                return imagehash.phash(img, hash_size=8)
+                        
+                        db_hash = await loop.run_in_executor(None, process_image, file_path)
+                        
+                        diff = uploaded_hash - db_hash
+                        similarity = (1.0 - (diff / 64.0)) * 100.0
+
+                        if similarity >= 70.0:
+                            match_found = True
+                            await create_timeline_event(
+                                case_id,
+                                "match_detected",
+                                f"Match detected in {folder.name}: {file_path.name} (Similarity: {similarity:.1f}%)"
+                            )
+
+                            # Run mutation analysis comparing original with matched image
+                            try:
+                                from image_processor import image_processor
+                                orig_bytes = Path(image_path).read_bytes()
+                                match_bytes = file_path.read_bytes()
+                                mutation_res = image_processor.analyze_mutations(orig_bytes, match_bytes)
+                                mutations = mutation_res["mutations"]
+                                severity_score = mutation_res["severity_score"]
+                            except Exception as exc:
+                                logger.warning("Mutation analysis failed: %s", exc)
+                                mutations = ["None"]
+                                severity_score = 0
+
+                            # Generate simulated timeline stamps for Feature 3
+                            from datetime import datetime, timedelta
+                            try:
+                                seed_idx = int(folder.name.split("_")[1])
+                            except Exception:
+                                seed_idx = idx
+                            
+                            day_offset = (seed_idx * 7) % 28 + 2  # Leak occurred between 2 and 29 days ago
+                            first_seen = (datetime.now() - timedelta(days=day_offset)).isoformat()
+                            last_seen = (datetime.now() - timedelta(days=max(0, day_offset - 2))).isoformat()
+
+                            # Add matching result
+                            unique_results.append({
+                                "source_url": f"https://{domain}/products/{file_path.name}",
+                                "page_title": f"Buy Online - {file_path.stem.replace('_', ' ')}",
+                                "domain": domain,
+                                "similarity_score": round(similarity, 1),
+                                "source_provider": "database_visual",
+                                "metadata_json": json.dumps({
+                                    "folder": folder.name,
+                                    "filename": file_path.name,
+                                    "mutations": mutations,
+                                    "severity_score": severity_score,
+                                    "first_seen": first_seen,
+                                    "last_seen": last_seen
+                                })
+                            })
+                    except Exception as e:
+                        logger.warning("Error processing image %s: %s", file_path, e)
 
         await create_timeline_event(
             case_id,
             "search_complete",
-            f"Generated {len(unique_results)} mock findings matching Links.txt.",
+            f"Visual database search completed. Discovered {len(unique_results)} visual matches across {len(website_folders)} websites.",
         )
 
         # 5️⃣ Count how many providers found each domain
@@ -249,7 +275,7 @@ class InvestigationAgent:
             "findings_saved",
             f"Saved {len(unique_results)} unique findings to database.",
         )
-        await asyncio.sleep(10)  # Deduplicate matching items
+        await asyncio.sleep(1.5)  # Deduplicate matching items
 
         # 7️⃣ Generate AI summary
         ai_summary: str | None = None
@@ -267,7 +293,7 @@ class InvestigationAgent:
             await create_timeline_event(
                 case_id, "summary_failed", f"AI summary failed: {exc}"
             )
-        await asyncio.sleep(5)  # Synthesize threat reports
+        await asyncio.sleep(1)  # Synthesize threat reports
 
         # 8️⃣ Finalise
         final_status = "completed"
@@ -280,6 +306,7 @@ class InvestigationAgent:
         findings_rows = await get_findings_for_case(case_id)
         timeline_rows = await get_timeline_for_case(case_id)
         high_conf = sum(1 for f in findings_rows if f["confidence"] >= 70)
+        provider_names = ["database_visual"]
 
         return InvestigationResult(
             case_id=case_id,

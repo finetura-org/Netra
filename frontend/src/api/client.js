@@ -1,6 +1,20 @@
 import axios from 'axios';
 
-const API_BASE = 'https://netra-backend-d92d.onrender.com/api';
+export const getBackendBaseUrl = () => {
+  const host = window.location.hostname;
+  const isLocal = host === 'localhost' || 
+                  host === '127.0.0.1' || 
+                  host.startsWith('192.168.') || 
+                  host.startsWith('10.') || 
+                  host.startsWith('172.') || 
+                  host.endsWith('.local');
+  if (isLocal) {
+    return 'http://localhost:8000';
+  }
+  return 'https://netra-backend-d92d.onrender.com';
+};
+
+const API_BASE = `${getBackendBaseUrl()}/api`;
 const client = axios.create({
   baseURL: API_BASE,
   headers: {

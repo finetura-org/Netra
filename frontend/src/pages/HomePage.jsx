@@ -68,9 +68,14 @@ const HomePage = ({ navigateTo }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)] animate-pulse" />
-          <span className="text-slate-200 uppercase tracking-widest font-bold">System Status: Active</span>
+        <div className="flex flex-col items-end gap-1 text-[10px] font-mono">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)] animate-pulse" />
+            <span className="text-slate-200 uppercase tracking-wider font-bold">System Status: Active</span>
+          </div>
+          <div className="text-[9px] text-slate-500 bg-slate-950/40 border border-slate-900/60 px-2 py-0.5 rounded">
+            API TARGET: <span className="text-cyan-400 font-bold">{api.defaults.baseURL.replace('/api', '')}</span>
+          </div>
         </div>
       </motion.header>
 
